@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ChatNate - Login</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; margin-top: 100px; }
+        input { padding: 10px; margin: 5px; }
+        button { padding: 10px; margin: 5px; }
+        #error { color: red; }
+    </style>
+</head>
+<body>
+<h1>Welcome to ChatNate</h1>
+
+<input type="text" id="username" placeholder="Username" /><br />
+<input type="password" id="password" placeholder="Password" /><br />
+
+<button onclick="login()">Login</button>
+<button onclick="register()">Register</button>
+
+<p id="error"></p>
+
+<script>
+    function login() {
+        auth('/auth/login');
+    }
+
+    function register() {
+        auth('/auth/register');
+    }
+
+    function auth(endpoint) {
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+
+        fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        })
+            .then(async res => {
+                if (!res.ok) {
+                    const error = await res.text();
+                    throw new Error(error);
+                }
+                return res.text(); // Token
+            })
+            .then(token => {
+                localStorage.setItem('token', token);
+                localStorage.setItem('username', username);
+                window.location.href = '/chat.html';
+            })
+            .catch(err => {
+                document.getElementById('error').textContent = err.message;
+            });
+    }
+</script>
+</body>
+</html>

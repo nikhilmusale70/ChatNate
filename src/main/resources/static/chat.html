@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ChatNate - Chat</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        #messages { height: 300px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; }
+        #messages p { margin: 5px 0; }
+        input, button { padding: 10px; margin: 5px; }
+        #messageInput { width: 70%; }
+        #sendBtn { width: 20%; }
+    </style>
+</head>
+<body>
+<h2>ChatNate</h2>
+<p>Logged in as: <strong id="userDisplay"></strong></p>
+<button onclick="logout()">Logout</button>
+
+<div id="messages"></div>
+
+<input type="text" id="messageInput" placeholder="Type a message..." />
+<button id="sendBtn" onclick="sendMessage()" disabled>Send</button>
+
+<!-- ✅ Load these scripts before using any STOMP functionality -->
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1.5.2/dist/sockjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+
+
+<script>
+    // Ensure global availability of stompClient
+    var stompClient = null;
+
+    const username = localStorage.getItem('username');
+    const token = localStorage.getItem('token');
+
+    if (!username || !token) {
+        window.location.href = '/login.html';
+    }
+
+    document.getElementById('userDisplay').textContent = username;
+
+    function showMessage(text) {
+        const p = document.createElement('p');
+        p.textContent = text;
+        const messagesDiv = document.getElementById('messages');
+        messagesDiv.appendChild(p);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight; // Auto-scroll
+    }
+
+    // Fetch chat history and load into the UI
+    fetch('/chat/history', {
+        headers: {
+            'Authorization': 'Bearer ' + token
+        }
+    })
+        .then(res => res.json())
+        .then(data => {
+            data.forEach(msg => {
+                showMessage(`${msg.sender} [${msg.timestamp}]: ${msg.content}`);
+            });
+        });
+
+    // Initialize WebSocket connection
+    const socket = new SockJS('/ws');
+    stompClient = Stomp.over(socket);
+
+    stompClient.connect({}, () => {
+        console.log("✅ Connected to WebSocket");
+
+        // Enable "Send" button once connected
+        document.getElementById('sendBtn').disabled = false;
+
+        // Subscribe to the topic
+        stompClient.subscribe('/topic/messages', (msg) => {
+            const message = JSON.parse(msg.body);
+            showMessage(`${message.sender} [${message.timestamp}]: ${message.content}`);
+        });
+    }, (error) => {
+        console.error("❌ WebSocket connection failed:", error);
+    });
+
+    function sendMessage() {
+        const content = document.getElementById('messageInput').value;
+        if (!content.trim()) return;
+
+        const message = {
+            sender: username,
+            content: content
+        };
+
+        console.log("📤 Sending message:", message);
+        stompClient.send("/app/chat", {}, JSON.stringify(message));
+        document.getElementById('messageInput').value = '';  // Clear input field
+    }
+
+    function logout() {
+        localStorage.clear();
+        window.location.href = '/login.html';
+    }
+</script>
+</body>
+</html>
