@@ -34,7 +34,7 @@ jobs:
           key: ${{ secrets.EC2_KEY }}  # Private key content (from your .pem file)
           source: "target/ChatNate-0.0.1-SNAPSHOT.jar"  # The built JAR file to deploy
           target: "/home/ec2-user/chatnate/"  # Target directory on the EC2 server
-          timeout: 1800  # Timeout in seconds (30 minutes)
+          timeout: "30m"  # Timeout in minutes
 
       # Step 5: Restart the ChatNate app on EC2 after deployment
       - name: 🔁 Restart ChatNate on EC2
