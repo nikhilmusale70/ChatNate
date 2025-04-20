@@ -46,6 +46,5 @@ jobs:
           script: |
             pkill -f 'java.*ChatNate' || true  # Kill any running ChatNate processes
             nohup java -jar /home/ec2-user/chatnate/ChatNate-0.0.1-SNAPSHOT.jar > /home/ec2-user/chatnate/output.log 2>&1 &  # Start the app in the background
-          timeout: 1800  # Timeout in seconds (30 minutes)
+          timeout: "30m"  # Timeout in minutes (30 minutes)
           debug: true  # Enable debug logging for troubleshooting
-
