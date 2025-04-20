@@ -3,25 +3,29 @@ name: Deploy ChatNate to AWS
 on:
   push:
     branches:
-      - main  # Trigger on push to the main branch
+      - main  # Trigger the workflow on push to the main branch
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest  # Run on the latest Ubuntu environment
 
     steps:
+      # Step 1: Checkout the repository
       - name: ⬇️ Checkout code
         uses: actions/checkout@v3
 
+      # Step 2: Set up JDK 22
       - name: ☕ Set up JDK 22
         uses: actions/setup-java@v3
         with:
           java-version: '22'  # Set Java version to 22
           distribution: 'temurin'
 
+      # Step 3: Build the app with Maven
       - name: ⚙️ Build with Maven
         run: mvn clean package -DskipTests  # Build the app, skipping tests for faster builds
 
+      # Step 4: Deploy the JAR file to AWS EC2 using SCP
       - name: 🚀 Deploy to AWS EC2
         uses: appleboy/scp-action@master
         with:
@@ -30,7 +34,9 @@ jobs:
           key: ${{ secrets.EC2_KEY }}  # Private key content (from your .pem file)
           source: "target/ChatNate-0.0.1-SNAPSHOT.jar"  # The built JAR file to deploy
           target: "/home/ec2-user/chatnate/"  # Target directory on the EC2 server
+          timeout: 1800  # Timeout in seconds (30 minutes)
 
+      # Step 5: Restart the ChatNate app on EC2 after deployment
       - name: 🔁 Restart ChatNate on EC2
         uses: appleboy/ssh-action@master
         with:
@@ -40,3 +46,6 @@ jobs:
           script: |
             pkill -f 'java.*ChatNate' || true  # Kill any running ChatNate processes
             nohup java -jar /home/ec2-user/chatnate/ChatNate-0.0.1-SNAPSHOT.jar > /home/ec2-user/chatnate/output.log 2>&1 &  # Start the app in the background
+          timeout: 1800  # Timeout in seconds (30 minutes)
+          debug: true  # Enable debug logging for troubleshooting
+
